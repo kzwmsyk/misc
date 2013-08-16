@@ -18,61 +18,57 @@
 
 (function($){
     var cache = {};    
-    $.tmpl = function (str, data){
-
+    $.tmpl = function (str, data) {
         // Figure out if we're getting a template, or if we need to
         // load the template - and be sure to cache the result.
         // Generate a reusable function that will serve as a template
         // generator (and which will be cached).
-
-        var fn;
-        if (! /\W/.test(str)) {
-            fn = cache[str] = (cache[str] || $.tmpl($('#'+str).html()))
-        } else {
-            
-            // Introduce the data as local variables using with(){}
-            // Convert the template into pure JavaScript
-            var escapeQuote = function(str){
-                return str.split("'").join("\\'");
-            };
-
-            var wrapFilter = function(_, w, fs){
-                $.each(fs.split(/\|/),
-                       function(_, f){
-                           f = f.replace(/^\s*|\s*$/g,'');
-                           if ($.tmpl.filter[f]){
-                               w = '$.tmpl.filter.'+f+'('+w+')';
-                           }
-                       });
-                return '\t='+w+'%>';
-            };
-            
-            var js = ("p.push('" +
-                      str
-                      .replace(/[\r\t\n]/g, " ")
-                      .split("<%").join("\t")
-                      .replace(/(^|%>)[^\t]*?(\t|$)/g, escapeQuote)
-                      .replace(/\t==(.*?)%>/g, '\t=$1|html%>')
-                      .replace(/\t=(.*?[^\|])\|([^\|][^%]*)%>/g, wrapFilter)
-                      .replace(/\t=(.*?)%>/g, "',$1,'")
-                      .split("\t").join("');")
-                      .split("%>").join("p.push('")
-                      +"');");
-                      
-            var body = ("var p=[];with(obj){"+js+"}return p.join('');");
-            fn = new Function("obj", body);
-        }
-
+        
+        var fn =
+            (/\W/.test(str)
+             ? new Function('obj', [
+                 // Introduce the data as local variables using with(){}
+                 // Convert the template into pure JavaScript
+                 "var p=[];with(obj){",
+                 "p.push('",
+                 str.replace(/[\r\t\n]/g, " ")
+                     .split("<%").join("\t")
+                     .replace(/(^|%>)[^\t]*?(\t|$)/g, function(str){
+                         return str.split("'").join("\\'");
+                     })
+                     .replace(/\t==(.*?)%>/g, '\t=$1|html%>')
+                     .replace(/\t=(.*?)%>/g, function(_, str){
+                         str.replace(/^(.*?[^\|])((\|\s*\w+\s*)+)$/, function(_, w, fs){
+                             str = w;
+                             $.each(fs.split(/\|/), function(_, f){
+                                 f = f.replace(/^\s*|\s*$/g,'');
+                                 if ($.tmpl.filter[f]){
+                                     str = '$.tmpl.filter.'+f+'('+str+')'
+                                 }
+                             });
+                         });
+                         return "',"+str+",'";
+                     })
+                     .split("\t").join("');")
+                     .split("%>").join("p.push('"),
+                 "');",
+                 "}return p.join('');"].join(''))
+             : cache[str] || (cache[str] = function(){
+                 var t = $('#'+str);
+                 if (!t[0]){ throw "template not found: " + str }
+                 return $.tmpl(t.html());
+             }()));
+        
         // Provide some basic currying to the user
         return data ? fn(data) : fn;
     };
-
+    
     $.tmpl.filter = {
         html: (function(){
             var div = $('<div/>');
             return function(str){
                 return div.text(str === 0 ? '0' : str || '').html();
-            },
+            }
         })(),
         unhtml: function(str){
             return str.replace(/&amp;(gt|lt|amp|quot|apos);/g, '&$1;');
@@ -97,7 +93,7 @@
             return $($.tmpl(tmplId, data)).appendTo(this);
         },
         tmplPrepend: function (tmplId, data) {
-            return $($.tmpl(tmplId,data)).prependTo(this);
+            return $($.tmpl(tmplId, data)).prependTo(this);
         }
     });
 })(jQuery);

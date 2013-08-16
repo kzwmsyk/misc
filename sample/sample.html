@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>sample</title>
+    <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+    <script type="text/javascript" src="../jquery.microtemplate.js"></script>
+    <script type="text/javascript" src="./sample.js"></script>
+    <script type="text/x-micro-template" id="tmpl1">
+      <dl class='sample'>
+        <dt>a</dt>
+        <dd><%== a %></dd>
+        <dt>b</dt>
+        <dd>
+          <% if(b){ %>
+          <%= isb | html %>
+          <% } else { %>
+          <%= isnotb | html %>
+          <% } %>
+        </dd>
+        <dt>c</dt>
+        <dd><%= c | html | nl2br %></dd>
+      </dl>
+    </script>
+    <script type="text/x-micro-template" id="tmpl2">
+      <div>tempate2</div>
+    </script>
+  </head>
+  <body></body>  
+</html>
